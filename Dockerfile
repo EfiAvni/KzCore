@@ -14,8 +14,7 @@ RUN composer install --no-dev --optimize-autoloader
 
 RUN php artisan config:clear || true && \
     php artisan route:clear || true && \
-    php artisan view:clear || true
+    php artisan view:clear || true && \
+    php artisan cache:clear || true
 
-CMD php artisan serve --host=0.0.0.0 --port=$PORT
-
-RUN php artisan migrate --force || true
+CMD sh -c "php artisan config:clear && php artisan cache:clear && php artisan serve --host=0.0.0.0 --port=$PORT"
