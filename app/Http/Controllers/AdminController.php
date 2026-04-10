@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GalleryItem;
+use App\Models\Setting;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -13,8 +18,9 @@ class AdminController extends Controller
     public function loginForm()
     {
         if (Auth::check()) {
-            return redirect()->route('admin.dashboard');
+            return $this->redirectAuthenticatedUser(Auth::user());
         }
+
         return view('admin.login');
     }
 
@@ -30,7 +36,8 @@ class AdminController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->route('admin.dashboard');
+
+            return $this->redirectAuthenticatedUser(Auth::user());
         }
 
         return back()->withErrors([
@@ -38,24 +45,97 @@ class AdminController extends Controller
         ])->onlyInput('email');
     }
 
+    protected function redirectAuthenticatedUser(?User $user)
+    {
+        if ($user?->isSuperAdmin()) {
+            return redirect()->route('kzcore.dashboard');
+        }
+
+        return redirect()->route('admin.dashboard');
+    }
+
+    protected function ensureTenantAdmin()
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            abort(401);
+        }
+
+        if ($user->isSuperAdmin()) {
+            return redirect()->route('kzcore.dashboard');
+        }
+
+        return null;
+    }
+
+    protected function currentTenantId(): ?int
+    {
+        return Auth::user()?->tenant_id;
+    }
+
+    protected function tenantScopedQuery(Builder $query): Builder
+    {
+        if (Auth::user()?->isSuperAdmin()) {
+            return $query;
+        }
+
+        return $query->where('tenant_id', $this->currentTenantId());
+    }
+
+    protected function visibleGalleryItems(): Builder
+    {
+        return $this->tenantScopedQuery(GalleryItem::query());
+    }
+
+    protected function visibleUsers(): Builder
+    {
+        return $this->tenantScopedQuery(User::query());
+    }
+
+    protected function assignableRoles(): array
+    {
+        if (Auth::user()?->isSuperAdmin()) {
+            return User::roles();
+        }
+
+        return [User::ROLE_TENANT_ADMIN];
+    }
+
     public function dashboard()
     {
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
         return view('admin.dashboard');
     }
 
     public function reports()
     {
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
         return view('admin.reports');
     }
 
     public function gallery()
     {
-        $images = \App\Models\GalleryItem::latest()->get();
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
+        $images = $this->visibleGalleryItems()->latest()->get();
         return view('admin.gallery', compact('images'));
     }
 
     public function galleryStore(Request $request)
     {
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
         $request->validate([
             'images' => 'required|array|max:30',
             'images.*' => 'required|image|mimes:jpeg,png,jpg,webp|max:20480',
@@ -84,7 +164,8 @@ class AdminController extends Controller
             // WebP formatına çevir, %80 kalite ile kaydet
             $image->save($absolutePath, quality: 80);
 
-            \App\Models\GalleryItem::create([
+            GalleryItem::create([
+                'tenant_id' => $this->currentTenantId(),
                 'image_path' => $relativePath,
                 'title' => $request->title,
             ]);
@@ -99,8 +180,12 @@ class AdminController extends Controller
 
     public function galleryDestroy($id)
     {
-        $item = \App\Models\GalleryItem::findOrFail($id);
-        \Illuminate\Support\Facades\Storage::disk('public')->delete($item->image_path);
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
+        $item = $this->visibleGalleryItems()->findOrFail($id);
+        Storage::disk('public')->delete($item->image_path);
         $item->delete();
         
         return back()->with('success', 'Görsel silindi.');
@@ -108,22 +193,30 @@ class AdminController extends Controller
 
     public function settings()
     {
-        $settings = \App\Models\Setting::pluck('value', 'key')->toArray();
-        $users = \App\Models\User::all();
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
+        $settings = Setting::allForTenant($this->currentTenantId());
+        $users = $this->visibleUsers()->get();
         return view('admin.settings', compact('settings', 'users'));
     }
 
     public function settingsUpdate(Request $request)
     {
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
         $data = $request->except(['_token', 'site_logo']);
         
         foreach ($data as $key => $value) {
-            \App\Models\Setting::updateOrCreate(['key' => $key], ['value' => $value]);
+            Setting::updateForTenant($key, $value, $this->currentTenantId());
         }
 
         if ($request->hasFile('site_logo')) {
             $path = $request->file('site_logo')->store('settings', 'public');
-            \App\Models\Setting::updateOrCreate(['key' => 'site_logo'], ['value' => $path]);
+            Setting::updateForTenant('site_logo', $path, $this->currentTenantId());
         }
 
         return back()->with('success', 'Sistem ayarları başarıyla güncellendi.');
@@ -131,18 +224,23 @@ class AdminController extends Controller
 
     public function userStore(Request $request)
     {
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
         $request->validate([
             'username' => 'required',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
-            'role' => 'required|in:admin,editor,viewer',
+            'role' => 'required|in:' . implode(',', $this->assignableRoles()),
         ]);
 
-        \App\Models\User::create([
-            'business_name' => \Illuminate\Support\Facades\Auth::user()->business_name ?? 'Göksel Lastik',
+        User::create([
+            'tenant_id' => $this->currentTenantId(),
+            'business_name' => Auth::user()->business_name ?? 'Göksel Lastik',
             'username' => $request->username,
             'email' => $request->email,
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'password' => Hash::make($request->password),
             'phone' => $request->phone,
             'role' => $request->role,
         ]);
@@ -152,11 +250,17 @@ class AdminController extends Controller
 
     public function userDestroy($id)
     {
+        if ($redirect = $this->ensureTenantAdmin()) {
+            return $redirect;
+        }
+
         if (Auth::id() == $id) {
             return back()->withErrors('Kendi hesabınızı silemezsiniz.');
         }
         
-        \App\Models\User::findOrFail($id)->delete();
+        $user = $this->visibleUsers()->findOrFail($id);
+        $user->delete();
+
         return back()->with('success', 'Kullanıcı başarıyla silindi.');
     }
 

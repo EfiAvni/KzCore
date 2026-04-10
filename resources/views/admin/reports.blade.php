@@ -216,7 +216,7 @@
                 </div>
                 <div>
                     <div class="text-sm font-bold text-gray-800">{{ Auth::user()->username }}</div>
-                    <div class="text-xs text-gray-500 font-medium">{{ Auth::user()->role == 'admin' ? 'Tam Yetki' : (Auth::user()->role == 'editor' ? 'İçerik Yöneticisi' : 'İzleyici') }}</div>
+                    <div class="text-xs text-gray-500 font-medium">{{ Auth::user()->getRoleLabel() }}</div>
                 </div>
             </div>
         </header>

@@ -1,17 +1,22 @@
 <?php
 
+use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\ThemeController;
 use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\AdminController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [ThemeController::class, 'home'])->name('theme.home');
+Route::get('/about', [ThemeController::class, 'about'])->name('theme.about');
+Route::get('/services', [ThemeController::class, 'services'])->name('theme.services');
+Route::get('/contact', [ThemeController::class, 'contact'])->name('theme.contact');
+Route::get('/galeri', [ThemeController::class, 'gallery'])->name('theme.gallery');
 
-Route::get('/galeri', function () {
-    $images = \App\Models\GalleryItem::latest()->get();
-    return view('gallery', compact('images'));
-});
+Route::get('/KzCore/admin', [SuperAdminController::class, 'dashboard'])->name('kzcore.dashboard')->middleware('auth');
+Route::post('/KzCore/admin/tenants', [SuperAdminController::class, 'tenantStore'])->name('kzcore.tenants.store')->middleware('auth');
+Route::get('/KzCore/admin/tenants/{tenant}/edit', [SuperAdminController::class, 'tenantEdit'])->name('kzcore.tenants.edit')->middleware('auth');
+Route::put('/KzCore/admin/tenants/{tenant}', [SuperAdminController::class, 'tenantUpdate'])->name('kzcore.tenants.update')->middleware('auth');
+Route::delete('/KzCore/admin/tenants/{tenant}', [SuperAdminController::class, 'tenantDestroy'])->name('kzcore.tenants.destroy')->middleware('auth');
+Route::post('/KzCore/admin/tenant-users', [SuperAdminController::class, 'tenantUserStore'])->name('kzcore.tenant-users.store')->middleware('auth');
 
 Route::get('/admin', [AdminController::class, 'loginForm'])->name('admin.login');
 Route::post('/admin', [AdminController::class, 'loginSubmit'])->name('admin.login.submit');
@@ -26,4 +31,6 @@ Route::post('/admin/users', [AdminController::class, 'userStore'])->name('admin.
 Route::delete('/admin/users/{id}', [AdminController::class, 'userDestroy'])->name('admin.users.destroy')->middleware('auth');
 Route::post('/admin/logout', [AdminController::class, 'logout'])->name('admin.logout')->middleware('auth');
 
-
+Route::get('/test-host', function () {
+    return request()->getHost();
+});

@@ -13,9 +13,12 @@ return new class extends Migration
     {
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
-            $table->string('key')->unique();
+            $table->foreignId('tenant_id')->nullable()->index();
+            $table->string('key');
             $table->text('value')->nullable();
             $table->timestamps();
+
+            $table->unique(['tenant_id', 'key']);
         });
     }
 

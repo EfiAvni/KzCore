@@ -105,7 +105,7 @@
                 </div>
                 <div>
                     <div class="text-sm font-bold text-gray-800">{{ Auth::user()->username }}</div>
-                    <div class="text-xs text-gray-500 font-medium">{{ Auth::user()->role == 'admin' ? 'Tam Yetki' : (Auth::user()->role == 'editor' ? 'İçerik Yöneticisi' : 'İzleyici') }}</div>
+                    <div class="text-xs text-gray-500 font-medium">{{ Auth::user()->getRoleLabel() }}</div>
                 </div>
             </div>
         </header>
@@ -207,6 +207,21 @@
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-1 gap-8 mb-8 border-t border-gray-100 pt-8">
+                        <div>
+                            <h4 class="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wider">Site Icerikleri</h4>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Hakkimizda Yazisi</label>
+                                <textarea name="about_text" rows="5" class="input-field" placeholder="Sitede kullanilacak hakkimizda metni...">{{ $settings['about_text'] ?? '' }}</textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Hizmetler JSON</label>
+                                <textarea name="services_json" rows="8" class="input-field font-mono text-xs" placeholder='[{"title":"Lastik Degisimi","text":"Aciklama"}]'>{{ $settings['services_json'] ?? '' }}</textarea>
+                                <p class="mt-2 text-xs text-gray-500">Ornek format: `[{"title":"Lastik Degisimi","text":"Aciklama"},{"title":"Rot Balans","text":"Aciklama"}]`</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex justify-end pt-4 border-t border-gray-100">
                         <button type="submit" class="bg-kz-gold hover:bg-kz-gold-dark text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-sm transition-colors shadow-md">
                             Tüm Ayarları Kaydet
@@ -246,9 +261,10 @@
                             <div class="mb-4">
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Hesap Yetkisi (*)</label>
                                 <select name="role" required class="input-field bg-white">
-                                    <option value="admin">Tam Yetki (Tüm Ayarlara Erişir)</option>
-                                    <option value="editor">İçerik Yönetimi (Galeri Düzenleyebilir)</option>
-                                    <option value="viewer" selected>Görüntüleme (Sadece Görebilir)</option>
+                                    @if(Auth::user()->isSuperAdmin())
+                                    <option value="{{ \App\Models\User::ROLE_SUPER_ADMIN }}">Super Admin</option>
+                                    @endif
+                                    <option value="{{ \App\Models\User::ROLE_TENANT_ADMIN }}" selected>Tenant Admin</option>
                                 </select>
                             </div>
                             <button type="submit" class="w-full bg-gray-800 hover:bg-black text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-colors mt-2">
@@ -266,8 +282,8 @@
                                 <div>
                                     <p class="font-bold text-sm text-gray-800 flex items-center gap-2">
                                         {{ $user->username }} 
-                                        <span class="text-[0.65rem] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider {{ $user->role == 'admin' ? 'bg-red-100 text-red-700' : ($user->role == 'editor' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700') }}">
-                                            {{ $user->role == 'admin' ? 'Tam Yetki' : ($user->role == 'editor' ? 'İçerik Yönetimi' : 'Görüntüleme') }}
+                                        <span class="text-[0.65rem] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider {{ $user->isSuperAdmin() ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">
+                                            {{ $user->getRoleLabel() }}
                                         </span>
                                     </p>
                                     <p class="text-xs text-gray-500 mt-1">{{ $user->email }} - {{ $user->phone ?? 'Telefon Yok' }}</p>

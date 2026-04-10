@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('gallery_items', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')->nullable()->index();
             $table->string('image_path');
             $table->string('title')->nullable();
             $table->timestamps();
