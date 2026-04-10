@@ -12,15 +12,9 @@ COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
 
-RUN php artisan config:clear || true && \   
+RUN php artisan config:clear || true && \
     php artisan route:clear || true && \
     php artisan view:clear || true && \
     php artisan cache:clear || true
 
-CMD sh -c "php artisan config:clear && php artisan cache:clear && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=$PORT"
-
-php artisan tinker --execute="\\App\\Models\\User::create([
-'name' => 'Admin',
-'email' => 'admin@kzcore.com',
-'password' => bcrypt('12345678')
-]);" || true
+CMD sh -c "php artisan config:clear && php artisan cache:clear && php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=$PORT"
