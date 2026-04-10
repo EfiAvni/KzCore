@@ -5,11 +5,47 @@ use App\Http\Controllers\ThemeController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminController;
 
-Route::get('/', [ThemeController::class, 'home'])->name('theme.home');
-Route::get('/about', [ThemeController::class, 'about'])->name('theme.about');
-Route::get('/services', [ThemeController::class, 'services'])->name('theme.services');
-Route::get('/contact', [ThemeController::class, 'contact'])->name('theme.contact');
-Route::get('/galeri', [ThemeController::class, 'gallery'])->name('theme.gallery');
+$isMainDomainRequest = static fn (): bool => request()->getHost() === 'kzcore-production.up.railway.app';
+
+Route::get('/', function () use ($isMainDomainRequest) {
+    if ($isMainDomainRequest()) {
+        return redirect()->route('admin.login');
+    }
+
+    return app(ThemeController::class)->home();
+})->name('theme.home');
+
+Route::get('/about', function () use ($isMainDomainRequest) {
+    if ($isMainDomainRequest()) {
+        return redirect()->route('admin.login');
+    }
+
+    return app(ThemeController::class)->about();
+})->name('theme.about');
+
+Route::get('/services', function () use ($isMainDomainRequest) {
+    if ($isMainDomainRequest()) {
+        return redirect()->route('admin.login');
+    }
+
+    return app(ThemeController::class)->services();
+})->name('theme.services');
+
+Route::get('/contact', function () use ($isMainDomainRequest) {
+    if ($isMainDomainRequest()) {
+        return redirect()->route('admin.login');
+    }
+
+    return app(ThemeController::class)->contact();
+})->name('theme.contact');
+
+Route::get('/galeri', function () use ($isMainDomainRequest) {
+    if ($isMainDomainRequest()) {
+        return redirect()->route('admin.login');
+    }
+
+    return app(ThemeController::class)->gallery();
+})->name('theme.gallery');
 
 Route::get('/KzCore/admin', [SuperAdminController::class, 'dashboard'])->name('kzcore.dashboard')->middleware('auth');
 Route::post('/KzCore/admin/tenants', [SuperAdminController::class, 'tenantStore'])->name('kzcore.tenants.store')->middleware('auth');
