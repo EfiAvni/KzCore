@@ -140,6 +140,42 @@
             </div>
         </form>
 
+        @if(!empty($canRegisterSuperAdmin))
+            <div class="mt-8 border-t border-gray-100 pt-8">
+                <h2 class="text-lg font-bold text-gray-900 mb-2">Kayit Ol</h2>
+                <p class="text-sm text-gray-500 mb-5">Ilk super admin hesabini olusturmak icin asagidaki formu kullanin.</p>
+
+                <form action="{{ route('kzcore.super-admins.store') }}" method="POST" class="space-y-5">
+                    @csrf
+                    <div>
+                        <label for="register_username" class="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Kullanici Adi</label>
+                        <input type="text" id="register_username" name="username" class="input-field" value="{{ old('username') }}" required>
+                    </div>
+
+                    <div>
+                        <label for="register_email" class="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">E-Posta Adresi</label>
+                        <input type="email" id="register_email" name="email" class="input-field" value="{{ old('email') }}" required>
+                    </div>
+
+                    <div>
+                        <label for="register_phone" class="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Telefon</label>
+                        <input type="text" id="register_phone" name="phone" class="input-field" value="{{ old('phone') }}">
+                    </div>
+
+                    <div>
+                        <label for="register_password" class="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">Sifre</label>
+                        <input type="password" id="register_password" name="password" class="input-field" required minlength="6">
+                    </div>
+
+                    <div>
+                        <button type="submit" class="btn-primary">
+                            Kayit Ol
+                        </button>
+                    </div>
+                </form>
+            </div>
+        @endif
+
         <!-- Footer -->
         <div class="mt-8 text-center">
             <p class="text-xs text-gray-400 font-medium">

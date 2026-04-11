@@ -251,10 +251,12 @@
                 </div>
                 <div class="stat-card">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider">Tenant Admin</h3>
-                        <div class="icon-box bg-purple-50 text-purple-600">{{ $tenantUserCount }}</div>
+                        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider">Kullanici Dagilimi</h3>
+                        <div class="icon-box bg-purple-50 text-purple-600">{{ $superAdminCount }}</div>
                     </div>
-                    <p class="text-3xl font-black text-gray-900">{{ $tenantUserCount }}</p>
+                    <p class="text-3xl font-black text-gray-900">{{ $superAdminCount }}</p>
+                    <p class="mt-2 text-xs text-gray-500">Super Admin</p>
+                    <p class="mt-1 text-xs text-gray-500">{{ $tenantUserCount }} Tenant Admin</p>
                 </div>
             </div>
 

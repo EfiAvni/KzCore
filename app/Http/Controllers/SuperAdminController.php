@@ -55,6 +55,7 @@ class SuperAdminController extends Controller
             'activeTenantCount' => $tenants->where('status', 'active')->count(),
             'configuredDomainCount' => $tenants->whereNotNull('domain')->count(),
             'tenantUserCount' => User::query()->where('role', User::ROLE_TENANT_ADMIN)->count(),
+            'superAdminCount' => User::query()->where('role', User::ROLE_SUPER_ADMIN)->count(),
             'statusOptions' => $this->statusOptions(),
             'packageNameOptions' => $this->packageNameOptions(),
             'themeOptions' => $this->themeOptions(),
@@ -228,6 +229,47 @@ class SuperAdminController extends Controller
         return redirect()->route('kzcore.dashboard', [
             'section' => 'overview',
         ])->with('success', 'Tenant ve bagli tum veriler kalici olarak silindi.');
+    }
+
+    public function superAdminStore(Request $request)
+    {
+        $authenticatedUser = Auth::user();
+
+        if ($authenticatedUser) {
+            if ($redirect = $this->ensureSuperAdmin()) {
+                return $redirect;
+            }
+        } elseif (User::query()->where('role', User::ROLE_SUPER_ADMIN)->exists()) {
+            return redirect()->route('admin.login')->withErrors([
+                'register' => 'Kayit olma islemi devre disi. Mevcut bir super admin bulunuyor.',
+            ]);
+        }
+
+        $data = $request->validate([
+            'username' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
+            'phone' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        $user = User::create([
+            'tenant_id' => null,
+            'business_name' => 'KzCore',
+            'username' => $data['username'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+            'phone' => $data['phone'] ?: null,
+            'role' => User::ROLE_SUPER_ADMIN,
+        ]);
+
+        if (! $authenticatedUser) {
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            return redirect()->route('kzcore.dashboard')->with('success', 'Super admin hesabi olusturuldu.');
+        }
+
+        return back()->with('success', 'Super admin kullanicisi basariyla olusturuldu.');
     }
 
     protected function statusOptions(): array

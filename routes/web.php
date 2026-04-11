@@ -53,6 +53,7 @@ Route::get('/KzCore/admin/tenants/{tenant}/edit', [SuperAdminController::class, 
 Route::put('/KzCore/admin/tenants/{tenant}', [SuperAdminController::class, 'tenantUpdate'])->name('kzcore.tenants.update')->middleware('auth');
 Route::delete('/KzCore/admin/tenants/{tenant}', [SuperAdminController::class, 'tenantDestroy'])->name('kzcore.tenants.destroy')->middleware('auth');
 Route::post('/KzCore/admin/tenant-users', [SuperAdminController::class, 'tenantUserStore'])->name('kzcore.tenant-users.store')->middleware('auth');
+Route::post('/KzCore/admin/super-admins', [SuperAdminController::class, 'superAdminStore'])->name('kzcore.super-admins.store');
 
 Route::get('/admin', [AdminController::class, 'loginForm'])->name('admin.login');
 Route::post('/admin', [AdminController::class, 'loginSubmit'])->name('admin.login.submit');

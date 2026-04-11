@@ -21,7 +21,11 @@ class AdminController extends Controller
             return $this->redirectAuthenticatedUser(Auth::user());
         }
 
-        return view('admin.login');
+        return view('admin.login', [
+            'canRegisterSuperAdmin' => ! User::query()
+                ->where('role', User::ROLE_SUPER_ADMIN)
+                ->exists(),
+        ]);
     }
 
     public function loginSubmit(Request $request)
